@@ -1,0 +1,7 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: swagger-priority
+value: 600
+globalDefault: false
+description: "Priority for swagger UI"

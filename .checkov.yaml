@@ -1,0 +1,4 @@
+quiet: true
+framework: kubernetes
+skip-check:
+  - CKV_K8S_21   # example: skip "imagePullPolicy not Always"

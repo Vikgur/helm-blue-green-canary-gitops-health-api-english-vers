@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  # стабильное имя сервиса, на него смотрит Ingress
+  name: nginx
+  labels:
+    app.kubernetes.io/name: nginx
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    app.kubernetes.io/name: nginx
+    track: {{ .Values.selectedTrack | default "blue" }}

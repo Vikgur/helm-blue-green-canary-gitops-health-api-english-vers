@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-nginx-config
+  namespace: {{ .Release.Namespace }}
+data:
+  default.conf: |-
+    {{ .Values.config | nindent 4 }}

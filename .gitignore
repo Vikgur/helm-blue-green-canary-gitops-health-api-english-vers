@@ -1,0 +1,41 @@
+# Python cache / editor
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.swo
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Helm / Helmfile artifacts
+*.tgz
+charts/
+tmpcharts/
+.helmfile
+helmfile.d/
+
+# Secrets
+*.secret.yaml
+*.enc.yaml
+*.sops.yaml
+.vault_pass.txt
+
+# Local values (не должны попасть в Git)
+values-dev/
+values/*/local.yaml
+
+# Trivy / Checkov / Gitleaks reports
+.trivy/
+checkov_results.json
+gitleaks_results.json
+
+# Pre-commit cache
+.pre-commit-config-local.yaml
+.pre-commit-hooks.yaml
+
+# Misc
+.DS_Store
+.env

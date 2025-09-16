@@ -1,0 +1,89 @@
+image:
+  repository: ghcr.io/vik-devops-lab/health-api-frontend
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+replicaCount: 1
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+
+deployment:
+  revisionHistoryLimit: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+terminationGracePeriodSeconds: 30
+
+serviceAccountName: frontend-sa
+
+priorityClassName: frontend-priority
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: frontend
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+startupProbe:
+  failureThreshold: 30
+  periodSeconds: 5
+
+lifecycle:
+  preStop:
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "sleep 5"
+
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - frontend
+        topologyKey: kubernetes.io/hostname
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: frontend
+    effect: "NoSchedule"

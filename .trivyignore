@@ -1,0 +1,3 @@
+# Ignore false positives
+AVD-K8S-0001   # example: Deployment has no securityContext, but it's defined in another layer
+AVD-K8S-0002

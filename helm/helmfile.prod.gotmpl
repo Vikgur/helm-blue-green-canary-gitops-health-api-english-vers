@@ -1,0 +1,49 @@
+helmDefaults:
+  timeout: 600
+  wait: true
+  verify: true
+  recreatePods: false
+
+releases:
+  - name: postgres
+    namespace: health-api
+    chart: ./charts/postgres
+    values:
+      - values/prod/postgres.yaml
+
+  - name: backend
+    namespace: health-api
+    chart: ./charts/backend
+    values:
+      - values/{{ requiredEnv "ENV" }}/backend.yaml
+    needs:
+      - postgres
+
+  - name: frontend
+    namespace: health-api
+    chart: ./charts/frontend
+    values:
+      - values/{{ requiredEnv "ENV" }}/frontend.yaml
+    needs:
+      - backend
+
+  - name: nginx
+    namespace: health-api
+    chart: ./charts/nginx
+    values:
+      - values/{{ requiredEnv "ENV" }}/nginx.yaml
+    needs:
+      - frontend
+
+  - name: jaeger
+    namespace: health-api
+    chart: ./charts/jaeger
+    values:
+      - values/prod/jaeger.yaml
+
+  - name: init-db
+    namespace: health-api
+    chart: ./charts/init-db
+    values:
+      - values/prod/init-db.yaml
+    installed: false   # used as fallback/manual

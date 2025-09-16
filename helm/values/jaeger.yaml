@@ -1,0 +1,21 @@
+allInOne:
+  enabled: true
+  image:
+    tag: "1.48"
+
+agent:
+  enabled: false
+collector:
+  enabled: false
+query:
+  enabled: false
+migrate:
+  enabled: false
+
+cassandra:
+  enabled: false
+elasticsearch:
+  enabled: false
+
+storage:
+  type: memory

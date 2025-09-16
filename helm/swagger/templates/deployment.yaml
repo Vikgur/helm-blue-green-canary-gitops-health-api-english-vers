@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "swagger.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "swagger.name" . }}
+  revisionHistoryLimit: {{ .Values.deployment.revisionHistoryLimit }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.strategy.rollingUpdate.maxUnavailable }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "swagger.name" . }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      securityContext: {{- toYaml .Values.securityContext | nindent 6 }}
+      topologySpreadConstraints: {{- toYaml .Values.topologySpreadConstraints | nindent 6 }}
+      affinity: {{- toYaml .Values.affinity | nindent 6 }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 6 }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 6 }}
+      containers:
+        - name: swagger
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
+          volumeMounts:
+            - name: swagger-config
+              mountPath: /usr/share/nginx/html/swagger.json
+              subPath: swagger.json
+            - name: swagger-config
+              mountPath: /usr/share/nginx/html/swagger-config.yaml
+              subPath: swagger-config.yaml
+            - name: swagger-config
+              mountPath: /usr/share/nginx/html/swagger-initializer.js
+              subPath: swagger-initializer.js
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+          startupProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.service.targetPort }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          lifecycle:
+            preStop:
+              exec:
+                command: {{ toJson .Values.lifecycle.preStop.command }}
+      volumes:
+        - name: swagger-config
+          configMap:
+            name: {{ include "swagger.fullname" . }}-config

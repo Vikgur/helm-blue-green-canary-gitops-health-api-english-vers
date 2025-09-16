@@ -1,0 +1,12 @@
+apiVersion: v2
+name: backend
+description: REST API сервис health-api
+type: application
+version: 1.0.14
+appVersion: "1.0.14"
+maintainers:
+  - name: Vik
+    email: viktorgurko@gmail.com
+annotations:
+  component: backend
+  part-of: health-api

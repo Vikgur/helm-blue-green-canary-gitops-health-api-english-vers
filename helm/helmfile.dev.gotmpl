@@ -1,0 +1,63 @@
+helmDefaults:
+  timeout: 600
+  wait: true
+  verify: true
+  recreatePods: false
+
+environments:
+  dev:
+    values:
+      - image:
+          tag: '{{ requiredEnv "VERSION" }}'
+      - env:
+          VERSION: '{{ requiredEnv "VERSION" }}'
+
+releases:
+  - name: postgres
+    namespace: health-api
+    chart: ./charts/postgres
+    values:
+      - values/dev/postgres.yaml
+
+  - name: backend
+    namespace: health-api
+    chart: ./charts/backend
+    values:
+      - values/dev/backend.yaml
+    needs:
+      - postgres
+
+  - name: frontend
+    namespace: health-api
+    chart: ./charts/frontend
+    values:
+      - values/dev/frontend.yaml
+    needs:
+      - backend
+
+  - name: nginx
+    namespace: health-api
+    chart: ./charts/nginx
+    values:
+      - values/dev/nginx.yaml
+    needs:
+      - frontend
+
+  - name: jaeger
+    namespace: health-api
+    chart: ./charts/jaeger
+    values:
+      - values/dev/jaeger.yaml
+    installed: true
+
+  - name: init-db
+    namespace: health-api
+    chart: ./charts/init-db
+    values:
+      - values/dev/init-db.yaml
+    installed: false    # fallback/manual; migrations lates in backend-job
+
+  - name: alias-service
+    namespace: health-api
+    chart: ./charts/alias-service
+    installed: false    # Rollouts drives traffik in prod

@@ -1,0 +1,161 @@
+image:
+  repository: ghcr.io/vik-devops-lab/health-api-frontend
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+replicaCount: 1
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+deployment:
+  revisionHistoryLimit: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+terminationGracePeriodSeconds: 30
+
+serviceAccountName: nginx-sa
+
+priorityClassName: nginx-priority
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: nginx
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+startupProbe:
+  failureThreshold: 30
+  periodSeconds: 5
+
+lifecycle:
+  preStop:
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "sleep 5"
+
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - nginx
+        topologyKey: kubernetes.io/hostname
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: nginx
+    effect: "NoSchedule"
+
+host: health.gurko.ru
+
+tls:
+  enabled: true
+  disableRedirect: false
+  issuer: letsencrypt-prod
+  secretName: health-gurko-ru-tls
+
+controller:
+  extraArgs:
+    enable-annotation-validation: "false"
+
+htpasswd: |
+  admin:$apr1$eMBdq.kJ$v0U97AR/ndmyBgYG8LA3g/
+  user:$apr1$ooBFZuLZ$.LbUobhjNOwtt1nYgbuT40
+
+config: |
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=5r/s;
+
+    server {
+      listen 80;
+
+      rewrite ^/ui$ /ui/ permanent;
+      rewrite ^/swagger$ /swagger/ permanent;
+
+      access_log /var/log/nginx/access.log;
+      error_log /var/log/nginx/error.log;
+
+      location /ui/ {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /ui/index.html;
+      }
+
+      location / {
+        proxy_pass http://backend-backend:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+
+      location /api/ {
+        proxy_pass http://backend-backend:80;
+        rewrite ^/api(/.*)$ $1 break;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+
+      location /swagger/ {
+      auth_basic "Restricted";
+      auth_basic_user_file /etc/nginx/auth/.htpasswd;
+
+        proxy_pass http://swagger-swagger:8080/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      }
+
+      location = /swagger.json {
+        proxy_pass http://swagger-swagger:8080/swagger.json;
+      }
+
+      location = /swagger-config.yaml {
+        proxy_pass http://swagger-swagger:8080/swagger-config.yaml;
+      }
+
+      location /ping {
+        return 200 'pong';
+        add_header Content-Type text/plain;
+      }
+    }

@@ -1,0 +1,20 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "backend.fullname" . }}-init-db
+  labels:
+    app: {{ include "backend.name" . }}
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init-db
+          image: bitnami/postgresql:16
+          command: ["sh", "-c", "PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres-postgresql -U postgres -c 'CREATE DATABASE health;' || true"]
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-postgresql
+                  key: postgres-password

@@ -1,0 +1,8 @@
+title = "Gitleaks config for health-api helm repo"
+[extend]
+useDefault = true
+
+[[rules]]
+description = "Ignore Helm templates with {{ }}"
+regex = '''\{\{.*\}\}'''
+tags = ["template"]

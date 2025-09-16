@@ -1,0 +1,98 @@
+image:
+  repository: ghcr.io/vik-devops-lab/health-api-backend
+  pullPolicy: IfNotPresent
+
+service:
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+env:
+  FLASK_ENV: production
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+  SERVICE_NAME: health-api
+  POSTGRES_HOST: postgres-postgresql
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: health
+  POSTGRES_USER: postgres
+
+replicaCount: 1
+
+hpa:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 75
+
+deployment:
+  revisionHistoryLimit: 3
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+terminationGracePeriodSeconds: 30
+
+serviceAccountName: backend-sa
+
+priorityClassName: backend-priority
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: backend
+
+livenessProbe:
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+readinessProbe:
+  initialDelaySeconds: 3
+  periodSeconds: 5
+
+startupProbe:
+  failureThreshold: 30
+  periodSeconds: 5
+
+lifecycle:
+  preStop:
+    command:
+      - "/bin/sh"
+      - "-c"
+      - "sleep 5"
+
+nodeSelector:
+  node-role.kubernetes.io/worker: ""
+
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - backend
+        topologyKey: kubernetes.io/hostname
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: backend
+    effect: "NoSchedule"

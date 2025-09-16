@@ -1,0 +1,38 @@
+volumePermissions:
+  enabled: true
+
+# Используется при первом вызове Postgres, т.к. должна создасться минимум 1 бд
+# Можно заменить использовать "database: postgres", а базу health вручную создать
+# через init-db/templates/init-db-job.yaml
+auth:
+  username: postgres
+  password: postgres
+  database: health
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 5
+
+persistence:
+  size: 5Gi
+
+securityContext:
+  enabled: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+priorityClassName: postgres-priority
+
+terminationGracePeriodSeconds: 30

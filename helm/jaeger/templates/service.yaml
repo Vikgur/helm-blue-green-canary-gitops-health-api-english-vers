@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: http-query
+      port: 16686
+      targetPort: 16686
+    - name: collector-zipkin
+      port: 9411
+      targetPort: 9411
