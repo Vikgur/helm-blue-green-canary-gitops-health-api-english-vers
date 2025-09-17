@@ -15,6 +15,7 @@
   * [helm/helmfile.prod.gotmpl](#helmhelmfileprodgotmpl)
   * [helm/helmfile.dev.gotmpl](#helmhelmfiledevgotmpl)
   * [helm/values](#helmvalues)
+    * [Using shared values for stage and prod](#using-shared-values-for-stage-and-prod)
 * [Requirements Before Launch](#requirements-before-launch)
 * [Launch Instructions (Makefile)](#launch-instructions-makefile)  
   * [Preparation](#preparation)  
@@ -221,6 +222,14 @@ Highlights:
 - **postgres.yaml** — parameters for PostgreSQL.  
 - **jaeger.yaml** — config for the tracing system.  
 - **swagger.yaml** — config for swagger-ui.  
+
+### Using shared values for stage and prod
+
+The project uses a single values file for both environments.  
+This simplifies configuration and follows the chosen pattern: stage and prod always run on the same tag.  
+
+Consequence: the usual separation of "stage → testing → prod" is absent, and updates are applied simultaneously.  
+In large-scale GitOps projects, it is recommended to use separate values for independent environment management.
 
 ---
 
